@@ -1,0 +1,7 @@
+* An attempt to do the Advent of Code 2022 in Lean
+
+[[https://adventofcode.com/2022]]
+
+** Dec 1
+
+[[https://adventofcode.com/2022/day/1]]
