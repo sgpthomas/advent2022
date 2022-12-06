@@ -5,9 +5,8 @@ package aoc22 {
   -- add package configuration options here
 }
 
-lean_lib Aoc22 {
-  -- add library configuration options here
-}
+lean_lib Dec1
+lean_lib Dec2
 
 @[defaultTarget]
 lean_exe aoc22 {
