@@ -6,30 +6,46 @@ def parse : IO (List String) := do
   pure lines
   
 inductive Move where
-| Rock : Move
-| Paper : Move
-| Scissors : Move
-deriving BEq
+| rock : Move
+| paper : Move
+| scissors : Move
+deriving BEq, Repr
+
+def fromStr (input : String) : Option Move :=
+  match input with
+  | "A" | "X" => Move.rock
+  | "B" | "Y" => Move.paper
+  | "C" | "Z" => Move.scissors
+  | _ => none
 
 inductive Outcome where
-| Win : Outcome
-| Lose : Outcome
-| Tie : Outcome
+| win : Outcome
+| lose : Outcome
+| tie : Outcome
+
 
 def score (me : Move) (opp : Move) : Outcome :=
   if me == opp then
-    Outcome.Tie
+    Outcome.tie
   else match me, opp with
-    | Move.Rock, Move.Scissors => Outcome.Win
-    | Move.Paper, Move.Rock => Outcome.Win
-    | Move.Scissors, Move.Paper => Outcome.Win
-    | _, _ => Outcome.Lose
+    | Move.rock, Move.scissors => Outcome.win
+    | Move.paper, Move.rock => Outcome.win
+    | Move.scissors, Move.paper => Outcome.win
+    | _, _ => Outcome.lose
 
 def run : IO Unit := do
   
   let lines <- parse
   
+  let res :=
+    lines |> List.map (String.split · (· = ' '))
+          |> List.map (List.map fromStr ·)
+          -- |> 
+
+  -- let split := List.map (String.split · (· = ' ')) lines
   
+  -- let moves : List (Option Move × Option Move) := List.map (λ x => ((fromStr ∘ Prod.fst) x, (fromStr ∘ Prod.snd) x)) split
+   -- let moves : List (Move × Move) :=
 
   let stdout <- IO.getStdout
   stdout.putStrLn "Part 1: xxx"
