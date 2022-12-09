@@ -1,5 +1,6 @@
 import Dec1
 import Dec2
+import Dec3
 
 def main : IO Unit := do
   let stdout <- IO.getStdout

@@ -114,8 +114,9 @@ def run : IO Unit := do
   
   let parsed : List (Move × Move) :=
     lines |> List.map (String.split · (· = ' '))
-          |> List.map (λ x => (x[0]!, x[1]!))
-          |> List.map (λ x => fromStr <$> (x : UniProd String))
+          |> List.map (λ x => (x[0]?, x[1]?))
+          |> List.filterMap (λ x => liftOption x.fst x.snd)
+          |> List.map (λ (m1, m2) => (fromStr m1, fromStr m2))
           |> List.filterMap (λ x => liftOption x.fst x.snd)
 
   let part1 := 
@@ -127,12 +128,9 @@ def run : IO Unit := do
            |> List.map (λ (e, o) => (e, chooseOption e o))
            |> List.map (λ (e, h) => outcomeVal (score h e) + choiceVal h)
            |> List.foldl (· + ·) 0
-  
 
   let stdout <- IO.getStdout
   stdout.putStrLn s!"Part 1: {part1}"
   stdout.putStrLn s!"Part 2: {part2}"
-
-
 
 end Dec2
