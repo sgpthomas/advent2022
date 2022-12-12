@@ -8,6 +8,7 @@ package aoc22 {
 lean_lib Dec1
 lean_lib Dec2
 lean_lib Dec3
+lean_lib Utils
 
 @[defaultTarget]
 lean_exe aoc22 {
