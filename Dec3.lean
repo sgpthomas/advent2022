@@ -33,8 +33,6 @@ def Rucksack.consDec [DecidableEq α] {e : α}
     | isFalse hl, isFalse hr => Rucksack.cons new (And.intro hl hr) rs
     | _, _ => none
 
-#eval Rucksack.toList <$> ((Rucksack.nil : Rucksack 4).consDec (2, 2))
-
 inductive EvenList (α : Type u) where
 | even_nil : EvenList α
 | even_cons (x y : α) (tl : EvenList α) : EvenList α
@@ -76,9 +74,6 @@ def findCommon [BEq α] (l₁ : List α) (l₂ : List α) : Option α :=
   | x :: tl => match l₂.find? (· == x) with
                | some e => e
                | none => findCommon tl l₂
-  
-#eval EvenList.split <$> (EvenList.mk "abcdaBCD".data) >>= (Utils.uncurry findCommon)
-
 
 def test : List String := [
     "vJrwpWtwJgWrhcsFMMfFFhFp",
@@ -113,6 +108,13 @@ def Char.priority (e : Char) : Nat :=
     e.toNat - 38
   
 def Rucksack.priority {e : Char} (_ : Rucksack e) : Nat := Char.priority e
+
+def findBadgeHelp [BEq α] (l₁ l₂ l₃ : List α) : Option α :=
+  match l₁ with
+  | [] => none
+  | x :: tl => match l₂.find? (· == x), l₃.find? (· == x) with
+               | some _, some _ => some x
+               | _, _ => findBadgeHelp tl l₂ l₃
     
 def Rucksack.findBadge [BEq α] {e₁ e₂ e₃ : α}
     (rs₁ : Rucksack e₁)
@@ -122,13 +124,7 @@ def Rucksack.findBadge [BEq α] {e₁ e₂ e₃ : α}
   let (ll₁, lr₁) := rs₁.toList
   let (ll₂, lr₂) := rs₂.toList
   let (ll₃, lr₃) := rs₃.toList
-  h (ll₁ ++ lr₁) (ll₂ ++ lr₂) (ll₃ ++ lr₃)
-where h l₁ l₂ l₃ : Option α :=
-  match l₁ with
-  | [] => none
-  | x :: tl => match l₂.find? (· == x), l₃.find? (· == x) with
-               | some _, some _ => some x
-               | _, _ => h tl l₂ l₃
+  findBadgeHelp (ll₁ ++ lr₁) (ll₂ ++ lr₂) (ll₃ ++ lr₃)
                
 def Rucksack.findBadgeList [BEq α] : List ((e : α) × Rucksack e) -> Option α
   | [rs₁, rs₂, rs₃] => Rucksack.findBadge rs₁.snd rs₂.snd rs₃.snd
@@ -145,15 +141,6 @@ def List.windows (n : Nat) (l : List α) : List (List α) :=
     |> List.map (λ (i, x) => (i / n, x)) 
     |> List.groupBy (λ (i, _) (j, _) => i = j)
     |> List.map (List.map Prod.snd)
-  
-#eval test.filterMap Rucksack.fromStr
-      |> List.windows 3
-      |> List.filterMap Rucksack.findBadgeList
-      |> List.map Char.priority
-      |> List.foldl (· + ·) 0
-
-        
-def validate (input : List String) := false
 
 def run : IO Unit := do
 
@@ -163,10 +150,13 @@ def run : IO Unit := do
   let part1 := sacks |> List.map (λ x => Rucksack.priority (Sigma.snd x))
                      |> List.foldl (· + ·) 0
 
-  let part2 := sacks |> List.windows 3
-                     |> List.filterMap Rucksack.findBadgeList
-                     |> List.map Char.priority
-                     |> List.foldl (· + ·) 0
+  let part2 := lines |> List.map String.data
+               |> List.windows 3
+               |> List.filterMap (λ x => match x with
+                                         | [l1, l2, l3] => findBadgeHelp l1 l2 l3
+                                         | _ => none)
+               |> List.map Char.priority
+               |> List.foldl (· + ·) 0
   
   let stdout <- IO.getStdout
   stdout.putStrLn s!"Part 1: {part1}"
