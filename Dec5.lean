@@ -19,34 +19,12 @@ def Vector.nth {α : Type u} (v : Vector α n) (idx : Fin n) :=
 def Vector.set {α : Type u} (v : Vector α n) (idx : Fin n) (el : α) : Vector α n :=
   ⟨ v.val.set idx.val el, by simp exact v.property ⟩
 def Vector.fromList {α} (l : List α) : Vector α l.length := ⟨ l,  rfl ⟩
-
-theorem take_length {α} (n : Nat) (l : List α) (H : (Nat.succ n) < l.length)
-        : List.length (List.take (Nat.succ n) l) = Nat.succ (List.length (List.take n l)) :=
-  sorry
-
-def Vector.truncateList {α} (l : List α) (nf : Fin (Nat.succ l.length)) : Vector α n :=
-  let ⟨ n, lt ⟩ := nf
-  -- let p : List.length (List.take n l) = n := by
-  --   induction l with
-  --   | nil => cases n with
-  --            | zero => simp [List.take]
-  --            | succ n' => simp [List.take]; simp [*] at *; sorry
-  --   | cons h t H => cases n with
-  --            | zero => simp [List.take]
-  --            | succ n' =>  simp [List.take]
-    -- induction n with
-    -- | zero => simp [List.take]
-    -- | succ n' H => cases l with
-    --                | nil => sorry
-    --                | cons h t => simp [List.take]
-
-    -- induction n.val
-    -- · simp [List.take]
-    -- · rw [take_length]
-    --   · simp assumption
-      -- · simp assumption
-
-  ⟨ l.take n , p ⟩
+def Vector.foldlEnum {α β} {n} (f : α -> β -> Fin n -> α) (init : α) (v : Vector β n) : α :=
+  (h f init v).snd
+where h {α β} {n} (f : (Fin n × α) -> β -> Fin n -> (Fin n × α)) (init : (Fin n × α)) (v : Vector β n) : (Fin n × α) :=
+  match v with
+  | [] -> init
+  | h :: tl -> h f init tl
 
 notation a ":::" b => Vector.cons a b
 
@@ -80,18 +58,18 @@ def StackMachine.move {n : Nat} (num : Nat) (frm : Fin n) (to : Fin n) (sm : Sta
                | none => sm
     sm'.move n frm to
     
-#eval StackMachine.empty
-      |> StackMachine.addCol
-      |> StackMachine.addCol
-      |> StackMachine.addCol
-      |> StackMachine.place 0 'Z'
-      |> StackMachine.place 0 'N'
-      |> StackMachine.place 1 'M'
-      |> StackMachine.place 1 'C'
-      |> StackMachine.place 1 'D'
-      |> StackMachine.place 2 'E'
-      |> StackMachine.move 1 1 0
-      |> StackMachine.move 3 0 2
+-- #eval StackMachine.empty
+--       |> StackMachine.addCol
+--       |> StackMachine.addCol
+--       |> StackMachine.addCol
+--       |> StackMachine.place 0 'Z'
+--       |> StackMachine.place 0 'N'
+--       |> StackMachine.place 1 'M'
+--       |> StackMachine.place 1 'C'
+--       |> StackMachine.place 1 'D'
+--       |> StackMachine.place 2 'E'
+--       |> StackMachine.move 1 1 0
+--       |> StackMachine.move 3 0 2
 
 def data : String := "data/dec5.txt"
 
@@ -99,31 +77,23 @@ def data : String := "data/dec5.txt"
 --   | a, List.nil      => a
 --   | a, List.cons b l => foldl_dep f (f a b) l
 
-def parseStartingMachine (l : List String) : Option (List (List Char)) := do
+def parseStartingMachine (l : List String) : Option ((n : Nat) × StackMachine n) := do
   -- clean up the input
   let clean := l |> List.reverse
                  |> List.map String.data
                  |> List.map (Utils.windows 4)
                  |> List.map (List.filterMap (List.get? · 1))
+
+  let hd <- clean.head?
+  let tl <- clean.tail?
                  
-  pure clean
-  -- let hd <- clean.head?
-  -- let tl <- clean.tail?
-  
-  -- let uniform := tl.all (λ x => x.length = hd.length)
-  -- if uniform then
-  --   let init : (n : Nat) × StackMachine n := ⟨ 0, StackMachine.empty ⟩
-  --   let initMach := hd.foldl (λ ⟨ n, acc ⟩ _ => ⟨ n + 1, acc.addCol ⟩) init
-
-  --   let mach := tl.foldl
-  --               (λ oacc el =>
-  --                   (Utils.enum el).foldl (λ iacc (i, el) => iacc.place i el)
-  --                               oacc)
-  --               initMach.snd
-
-  --   some ⟨ initMach.fst, mach ⟩
-  -- else
-  --   none
+  let cleanVecs : List (Vector Char hd.length) :=
+    tl.filterMap (λ l =>
+                    match l.length.decEq hd.length with
+                    | isTrue p => some $ ⟨ l, p ⟩
+                    | isFalse _ => none)
+                 
+  pure ⟨ hd.length, cleanVecs ⟩
 
 #eval do (<- Utils.lines data)
       |> List.groupBy (λ (x y : String) =>
