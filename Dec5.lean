@@ -6,7 +6,8 @@ namespace Dec5
 -- we're using the subtype notation
 abbrev Vector (α : Type u) (n : Nat) := { l : List α // l.length = n }
 
-theorem enum_from_preserves_items (α : Type u) (n : Nat) (l : List α) : (l.enumFrom n).map Prod.snd = l := by
+theorem enum_from_preserves_items (α : Type u) (n : Nat) (l : List α)
+        : (l.enumFrom n).map Prod.snd = l := by
   induction l generalizing n with
   | nil => simp [List.map]
   | cons hd tl IH => simp [List.enum, List.enumFrom, List.map]
@@ -16,20 +17,42 @@ theorem enum_from_preserves_items (α : Type u) (n : Nat) (l : List α) : (l.enu
 theorem enum_preserves_items (α : Type u) (l : List α) : l.enum.map Prod.snd = l := by
   simp [List.enum]
   apply enum_from_preserves_items
+  
+theorem list_map_preserves_length {α β : Type u} (l : List α) (f : α -> β)
+        : (l.map f).length = l.length := by induction l <;> simp
 
 theorem list_enum_preserves_length (α) (l : List α) : l.length = l.enum.length := by
-  
-                     
-  -- simp [List.enum]
-  -- induction l with
-  -- | nil => simp [List.enumFrom]
-  -- | cons hd tl IH => simp [List.enumFrom]
+  simp [List.enum]
+  cases l with
+  | nil => simp [List.enumFrom]
+  | cons hd tl =>
+    simp [List.enumFrom]
+    have f : (List.enumFrom 1 tl).map Prod.snd = tl :=
+      enum_from_preserves_items α 1 tl
+    rw [<- f] simp rw [f]
+    
+theorem enum_bounded {α : Type u} (l : List α) :
+        ∀ x : (Nat × α), x ∈ l.enum -> x.fst < l.length := by
+  intros x p
+  induction l with
+  | nil => contradiction
+  | cons hd tl IH => simp [Membership.mem, List.Mem, List.enum, List.enumFrom] at *
+                     cases x with
+                     | mk i x =>
+                       cases i with
+                       | zero => exact Nat.succ_pos _
+                       | succ i' => sorry
+                       
+#eval [1, 2, 3] |> Utils.enum
 
-  -- induction l with
-  -- | nil => simp
-  -- | cons h t H => simp [List.enum]
-  --                 rw [H]
-  --                 simp [List.enum, List.enumFrom]
+-- def list_enum_lift {α : Type u} (l : List α) : l.enum -> List (Fin l.length × α)
+--   | [] => []
+--   | (i, hd) :: tl => (Fin.mk i _, hd) :: list_enum_lift tl
+                              
+                     -- cases x.fst with
+                     -- | zero => exact Nat.succ_pos _
+                     -- | succ n => apply Nat.succ_lt_succ
+
 
 def Vector.nil : Vector α 0 := ⟨[], rfl⟩
 def Vector.cons {α : Type u} (e : α) (v : Vector α n) : Vector α (n + 1) :=
@@ -44,10 +67,30 @@ def Vector.nth {α : Type u} (v : Vector α n) (idx : Fin n) :=
 def Vector.set {α : Type u} (v : Vector α n) (idx : Fin n) (el : α) : Vector α n :=
   ⟨ v.val.set idx.val el, by simp exact v.property ⟩
 def Vector.fromList {α} (l : List α) : Vector α l.length := ⟨ l,  rfl ⟩
+
 def Vector.enum {α} {n} (l : Vector α n) : Vector (Fin n × α) n :=
-  let l' := List.enum
-  let l' := l.val.enum.map (λ (i, a) => (Fin.mk i _, a))
-  ⟨ l' , by simp ⟩
+  -- this is a proof that List (Fin l.length × α) = List (Fin n × a)
+  let l' : List (Fin n × α) := by
+    rw [Eq.symm l.property]
+    exact Utils.enum l.val
+  -- let npr : List.length l.val = n := sorry
+  ⟨
+    l',
+    by simp [Eq.mpr, Eq.subst]
+       have lp : n = List.length (Utils.enum l.val) := sorry
+       rw [ lp]
+  ⟩
+  -- let enumL := l.val.enum
+  -- let l' := enumL.map (λ (i, a) =>
+  --   (Fin.mk i (by simp
+  --                 have pr : (i, a) ∈ List.enum l.val := by
+                    
+  --                 -- have thing := enum_bounded l.val (i, a) pr
+  --                 -- rw [<- l.property]
+  --                 -- exact thing
+  --                 ),
+  --     a))
+  -- ⟨ l' , by simp rw [<- list_enum_preserves_length] exact l.property ⟩
 
 -- def Vector.foldlEnum {α β} {n} (f : α -> β -> Fin n -> α) (init : α) (v : Vector β n) : α :=
 --   (h f init v).snd
