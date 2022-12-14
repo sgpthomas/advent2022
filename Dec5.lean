@@ -6,6 +6,31 @@ namespace Dec5
 -- we're using the subtype notation
 abbrev Vector (α : Type u) (n : Nat) := { l : List α // l.length = n }
 
+theorem enum_from_preserves_items (α : Type u) (n : Nat) (l : List α) : (l.enumFrom n).map Prod.snd = l := by
+  induction l generalizing n with
+  | nil => simp [List.map]
+  | cons hd tl IH => simp [List.enum, List.enumFrom, List.map]
+                     specialize IH (n + 1)
+                     rw [IH]
+                     
+theorem enum_preserves_items (α : Type u) (l : List α) : l.enum.map Prod.snd = l := by
+  simp [List.enum]
+  apply enum_from_preserves_items
+
+theorem list_enum_preserves_length (α) (l : List α) : l.length = l.enum.length := by
+  
+                     
+  -- simp [List.enum]
+  -- induction l with
+  -- | nil => simp [List.enumFrom]
+  -- | cons hd tl IH => simp [List.enumFrom]
+
+  -- induction l with
+  -- | nil => simp
+  -- | cons h t H => simp [List.enum]
+  --                 rw [H]
+  --                 simp [List.enum, List.enumFrom]
+
 def Vector.nil : Vector α 0 := ⟨[], rfl⟩
 def Vector.cons {α : Type u} (e : α) (v : Vector α n) : Vector α (n + 1) :=
   ⟨e :: v.val, by simp exact v.property⟩
@@ -19,12 +44,17 @@ def Vector.nth {α : Type u} (v : Vector α n) (idx : Fin n) :=
 def Vector.set {α : Type u} (v : Vector α n) (idx : Fin n) (el : α) : Vector α n :=
   ⟨ v.val.set idx.val el, by simp exact v.property ⟩
 def Vector.fromList {α} (l : List α) : Vector α l.length := ⟨ l,  rfl ⟩
-def Vector.foldlEnum {α β} {n} (f : α -> β -> Fin n -> α) (init : α) (v : Vector β n) : α :=
-  (h f init v).snd
-where h {α β} {n} (f : (Fin n × α) -> β -> Fin n -> (Fin n × α)) (init : (Fin n × α)) (v : Vector β n) : (Fin n × α) :=
-  match v with
-  | [] -> init
-  | h :: tl -> h f init tl
+def Vector.enum {α} {n} (l : Vector α n) : Vector (Fin n × α) n :=
+  let l' := List.enum
+  let l' := l.val.enum.map (λ (i, a) => (Fin.mk i _, a))
+  ⟨ l' , by simp ⟩
+
+-- def Vector.foldlEnum {α β} {n} (f : α -> β -> Fin n -> α) (init : α) (v : Vector β n) : α :=
+--   (h f init v).snd
+-- where h {α β} {n} (f : α -> β -> Fin n -> α) (init : (Fin n × α)) (v : Vector β n) : (Fin n × α) :=
+--   match v with
+--   | [] => init
+--   | h :: tl => h f init tl
 
 notation a ":::" b => Vector.cons a b
 
