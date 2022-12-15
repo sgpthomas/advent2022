@@ -19,14 +19,14 @@ def windows (n : Nat) (l : List α) : List (List α) :=
     |> List.map (List.map Prod.snd)
     
 def enum {α} (l : List α) : List (Fin l.length × α) :=
-  help l 0
+  help l (Fin.mk 0 _)
   -- match l with
   -- | [] => []
   -- | h :: tl => (Fin.mk tl.length (by simp_arith), h) :: (enum tl).map (λ (f, a) => (Fin.succ f, a))
 where help {α} (l : List α) (acc : Fin l.length) : List (Fin l.length × α) :=
   match l with
   | [] => []
-  | hd :: tl => (acc, hd) :: help l (acc.add 1)
+  | hd :: tl => (acc, hd) :: help l (acc.add (Fin.mk 1 _))
   
 def List.mkLength {α} (default : α) (n : Nat) : List α :=
   match n with
