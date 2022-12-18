@@ -6,6 +6,7 @@ package aoc22 {
 }
 
 lean_lib Utils
+lean_lib Vector
 lean_lib Dec1
 lean_lib Dec2
 lean_lib Dec3
