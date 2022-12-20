@@ -88,4 +88,9 @@ theorem enumFin_preserves_length {α : Type u} (l : List α) : l.length = (enumF
     simp
     sorry
     
+def allGood? {α : Type u} : List (Option α) -> Option (List α)
+  | [] => some []
+  | some hd :: tl => (allGood? tl).map (λ tl => hd :: tl)
+  | none :: _ => none
+    
 end Utils
