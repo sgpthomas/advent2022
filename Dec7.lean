@@ -19,7 +19,7 @@ mutual
         (List.map
           (λ x => (String.pushn "" ' ' d) ++ s!"{x}")
           (dirString files d)))
-    | Fs.entry name size _, _ => s!"{name} - {size}b"
+    | Fs.entry name size _, _ => s!"{name} - {size}"
    
   def dirString : List Fs -> Nat -> List String
     | [], _ => []
@@ -28,6 +28,12 @@ end
 
 def Fs.name : Fs -> String
   | entry name _ _ => name
+
+def Fs.size : Fs -> Nat
+  | entry _ size _ => size
+
+def Fs.files : Fs -> List Fs
+  | entry _ _ files => files
 
 instance : ToString Fs where
   toString := (Fs.toString · 1)
@@ -49,13 +55,20 @@ def Fs.pathOver : List String -> (Fs -> Fs) -> Fs -> Fs
   | hd :: tl, f, fs => Fs.mkOver hd (Fs.pathOver tl f) fs
   | [], f, fs => f fs
   
+def Fs.pathView : List String -> Fs -> Fs
+  | hd :: tl, Fs.entry name size files =>
+    match files.find? (·.name = hd) with
+    | some fs => Fs.pathView tl fs
+    | none => Fs.entry name size files
+  | [], fs => fs
+  
 def Fs.mkdir (name : String) : Fs -> Fs
   | Fs.entry oldName size l =>
-    Fs.entry oldName size (Fs.entry name 0 [] :: l)
+    Fs.entry oldName size (l ++ [Fs.entry name 0 []])
 
 def Fs.touch (name : String) (size : Nat) : Fs -> Fs
   | Fs.entry oldName oldSize l =>
-    Fs.entry oldName oldSize (Fs.entry name size [] :: l)
+    Fs.entry oldName oldSize (l ++ [Fs.entry name size []])
 
 -- #eval Fs.entry "" 0 []
 --   |> Fs.pathOver [] (Fs.mkdir "a")
@@ -135,9 +148,21 @@ def flatten : List (List String × List Output) -> List (List String × Output)
   
 def Fs.apply (path : List String) : Output -> Fs -> Fs
   | Output.dir name => Fs.pathOver path (Fs.mkdir name)
-  | Output.file size name => Fs.pathOver path (Fs.touch name size) 
+  | Output.file size name => Fs.pathOver path (Fs.touch name size)
   
-def data : String := "data/example7.txt"
+def Fs.dirSize : Fs -> Nat
+  | Fs.entry _ size [] => size
+  | Fs.entry name 0 (hd :: tl) => hd.dirSize + (Fs.dirSize (Fs.entry name 0 tl))
+  | _ => 0
+  
+def Fs.allDirs : Fs -> List (List String) :=
+  (List.map (List.filter (· ≠ ""))) ∘ h
+where h : Fs -> List (List String)
+  | Fs.entry name 0 [] => [[name]]
+  | Fs.entry name 0 (hd :: tl) => ((h hd).map (name :: ·)) ++ (h (Fs.entry name 0 tl))
+  | _ => []
+  
+def data : String := "data/dec7.txt"
 
 def run : IO Unit := do
 
@@ -153,8 +178,20 @@ def run : IO Unit := do
       |> pwd
       |> flatten
       |> List.foldl (λ fs (path, output) => Fs.apply path output fs) Fs.root
-    let part1 := fs
-    let part2 := 0
+      
+    let sizes := fs
+      |> Fs.allDirs
+      |> List.map (λ path => Fs.pathView path fs)
+      |> List.map Fs.dirSize
+      
+    let part1 := sizes
+      |> List.filter (· <= 100000)
+      |> List.foldl (· + ·) 0
+
+    let totalSize := 70000000
+    let updSize := 30000000
+    let needed := updSize - (totalSize - Fs.dirSize fs) 
+    let part2 := sizes |> List.find? (· >= needed)
     (part1, part2)
   | none => default
   
