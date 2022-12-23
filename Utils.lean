@@ -92,5 +92,15 @@ def allGood? {α : Type u} : List (Option α) -> Option (List α)
   | [] => some []
   | some hd :: tl => (allGood? tl).map (λ tl => hd :: tl)
   | none :: _ => none
+  
+def transpose {α : Type u} (l : List (List α)) :=
+  let hd' := allGood? $ l.map List.head?
+  let tl' := allGood? $ l.map List.tail?
+  match hd', tl' with
+  | some hd, some tl =>
+    have h : tl.length < l.length := by sorry
+    hd :: (transpose tl)
+  | _, _ => []
+termination_by transpose l => l.length
     
 end Utils
